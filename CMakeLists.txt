@@ -96,9 +96,11 @@ if(CONDA_ROOT)
     endif()
 else()
     if(MATHLIB STREQUAL "OpenBLAS")
+        find_package(OpenBLAS REQUIRED)
+        find_package(LAPACK REQUIRED)
         add_definitions(-DHAVE_CLAPACK=1)
         include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tools/CLAPACK)
-        link_libraries(${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+        link_libraries(OpenBLAS::OpenBLAS LAPACK::LAPACK)
     elseif(MATHLIB STREQUAL "MKL")
         if(NOT DEFINED ENV{MKLROOT} OR "$ENV{MKLROOT}" STREQUAL "")
             message(FATAL_ERROR "Environment variable MKLROOT is not defined")
@@ -152,9 +154,6 @@ if(MSVC)
         CMAKE_C_FLAGS_DEBUG
         CMAKE_C_FLAGS_RELEASE
         )
-    foreach(CompilerFlag ${CompilerFlags})
-      string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-    endforeach()
     set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE INTERNAL "")
     if(NOT DEFINED ENV{CUDAHOSTCXX})
         set(ENV{CUDAHOSTCXX} ${CMAKE_CXX_COMPILER})
@@ -226,7 +225,8 @@ endif()
 #            PATHS "${CMAKE_CURRENT_SOURCE_DIR}/tools/openfst/include"
 #            REQUIRED)
 
-link_libraries(fst)
+find_package(OpenFst REQUIRED)
+link_libraries(OpenFst::fst OpenFst::fstfar OpenFst::fstngram OpenFst::fstlookahead)
 
 # add all native libraries
 add_subdirectory(src/base) # NOTE, we need to patch the target with version from outside
@@ -299,7 +299,7 @@ if(NOT CONDA_ROOT)
     configure_package_config_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/kaldi-config.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/cmake/kaldi-config.cmake
-        INSTALL_DESTINATION lib/cmake/kaldi
+        INSTALL_DESTINATION share/kaldi
     )
     write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/cmake/kaldi-config-version.cmake
@@ -307,7 +307,7 @@ if(NOT CONDA_ROOT)
         COMPATIBILITY AnyNewerVersion
     )
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/kaldi-config.cmake ${CMAKE_CURRENT_BINARY_DIR}/cmake/kaldi-config-version.cmake
-        DESTINATION lib/cmake/kaldi
+        DESTINATION share/kaldi
     )
-    install(EXPORT kaldi-targets DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/kaldi)
+    install(EXPORT kaldi-targets NAMESPACE kaldi:: DESTINATION ${CMAKE_INSTALL_PREFIX}/share/kaldi)
 endif()
